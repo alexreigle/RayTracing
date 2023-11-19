@@ -3,6 +3,20 @@
 
 #include "OneWeekend.h"
 
+color ray_color(const ray& r, const hittable& world)
+{
+    hit_record rec;
+    if (world.hit(r, interval(0, infinity), rec))
+    {
+        return 0.5 * (rec.normal + color(1, 1, 1));
+    }
+
+
+    vec3 unit_direction = unit_vector(r.direction());
+    auto a = 0.5 * (unit_direction.y() + 1.0);
+    return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+}
+
 int main() {
 
     std::ofstream img;
@@ -21,6 +35,11 @@ int main() {
     int image_height = static_cast<int>(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;   // Ensure image height is at least 1
     
+    // World/List of objects in World
+    hittable_list world;
+    world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
+
     // Camera
     auto focal_length = 1.0;
     auto camera_center = point3(0, 0, 0);
@@ -51,10 +70,8 @@ int main() {
             auto ray_direction = pixel_center - camera_center;
             ray r(camera_center, ray_direction);
 
-            color pixel_color = r.ray_color(r);  // NOTE: I've moved the `ray_color` function into the ray class and therefore have to access it via the ray object "r", above.
-                                                 
-            //auto pixel_color = color(double(i)/ (image_width - 1), double(j) / (image_height - 1), 0);
-            //write_color(img, pixel_color);
+            color pixel_color = ray_color(r, world);
+            write_color(img, pixel_color);
         }
     }
 

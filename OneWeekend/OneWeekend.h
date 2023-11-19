@@ -6,5 +6,8 @@
 #include <iostream>
 #include <fstream>
 
-
+#include "constants.h"
+#include "hittable.h"
+#include "hittable_list.h"
+#include "sphere.h"
 #include "ray.h"
