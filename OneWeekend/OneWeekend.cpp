@@ -54,7 +54,7 @@ int main() {
             color pixel_color = r.ray_color(r);  // NOTE: I've moved the `ray_color` function into the ray class and therefore have to access it via the ray object "r", above.
                                                  
             //auto pixel_color = color(double(i)/ (image_width - 1), double(j) / (image_height - 1), 0);
-            //write_color(std::cout, pixel_color);
+            //write_color(img, pixel_color);
         }
     }
 
