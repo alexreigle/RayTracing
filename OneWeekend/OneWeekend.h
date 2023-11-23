@@ -11,3 +11,8 @@
 #include "hittable_list.h"
 #include "sphere.h"
 #include "ray.h"
+#include "sensor.h"
+#include "hittable_list.h"
+#include "sphere.h"
+#include "material.h"
+#include "color.h"
