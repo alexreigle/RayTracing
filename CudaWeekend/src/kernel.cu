@@ -64,17 +64,14 @@ __global__ void render_init(int max_x, int max_y, curandState* rand_state)
 
 /* TODO: Move the random seed initialization to this function as:
 curand_init(1984, pixel_index, 0, &rand_state[pixel_index]);*/
-__global__ void render(vec3* fb, int max_x, int max_y, int ns,
-    camera **cam, hitable **world, curandState *rand_state) 
-{
+__global__ void render(vec3* fb, int max_x, int max_y, int ns, camera** cam, hitable** world, curandState* rand_state) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
     if ((i >= max_x) || (j >= max_y)) return;
     int pixel_index = j * max_x + i;
     curandState local_rand_state = rand_state[pixel_index];
     vec3 col(0, 0, 0);
-    for (int s = 0; s < ns; s++) 
-    {
+    for (int s = 0; s < ns; s++) {
         float u = float(i + curand_uniform(&local_rand_state)) / float(max_x);
         float v = float(j + curand_uniform(&local_rand_state)) / float(max_y);
         ray r = (*cam)->get_ray(u, v);
@@ -88,7 +85,7 @@ __global__ void render(vec3* fb, int max_x, int max_y, int ns,
     fb[pixel_index] = col;
 }
 
-__global__ void create_world(hitable** d_list, hitable** d_world, camera** d_camera)
+__global__ void create_world(hitable** d_list, hitable** d_world, camera** d_camera, int nx, int ny)
 {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         d_list[0] = new sphere(vec3(0, 0, -1), 0.5,
@@ -102,7 +99,11 @@ __global__ void create_world(hitable** d_list, hitable** d_world, camera** d_cam
         d_list[4] = new sphere(vec3(-1, 0, -1), -0.45,
             new dielectric(1.5));
         *d_world = new hitable_list(d_list, 5);
-        *d_camera = new camera();
+        *d_camera = new camera(vec3(-2, 2, 1),
+            vec3(0, 0, -1),
+            vec3(0, 1, 0),
+            20.0,
+            float(nx) / float(ny));
     }
 }
 
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
     checkCudaErrors(cudaMalloc((void**)&d_world, sizeof(hitable*)));
     camera** d_camera;
     checkCudaErrors(cudaMalloc((void**)&d_camera, sizeof(camera*)));
-    create_world << <1, 1 >> > (d_list, d_world, d_camera);
+    create_world << <1, 1 >> > (d_list, d_world, d_camera, nx, ny);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
@@ -172,7 +173,7 @@ int main(int argc, char* argv[])
     render_init<<<blocks, threads>>>(nx, ny, d_rand_state); // only exists to initialize rand numbers separately from render
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
-    render<<<blocks, threads>>>(fb, nx, ny, ns, d_camera, d_world, d_rand_state);
+    render<<<blocks, threads>>>(fb, nx, ny,  ns, d_camera, d_world, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
     stop = clock();
